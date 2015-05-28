@@ -22,7 +22,9 @@
 	void add_sub(char op);
 	void div_star(char op);
 	void comp( char* bop);
-	
+	void neg(void);
+	void bope (char* bop);
+
 	
 /*	typedef enum { ENT, CAR } type_var; */
 
@@ -144,15 +146,15 @@ InstrComp	: LACC SuiteInstr RACC
 Instr		: LValue EGAL Exp PV
 			| IF LPAR Exp RPAR Instr
 			| IF LPAR Exp RPAR Instr ELSE Instr
-			| WHILE LPAR Exp RPAR Instr
-			| RETURN Exp PV
-			| RETURN PV
+			| WHILE LPAR Exp RPAR Instr				
+			| RETURN Exp PV								{inst("POP"); inst("RETURN");}
+			| RETURN PV									{inst("RETURN");}
 			| IDENT LPAR Arguments RPAR PV
 			| READ LPAR IDENT RPAR PV
 			| READCH LPAR IDENT RPAR PV
-			| PRINT LPAR Exp RPAR PV
-			| PV
-			| InstrComp
+			| PRINT LPAR Exp RPAR PV					{inst("POP");inst("WRITE");}
+			| PV										{}
+			| InstrComp									{}
 			;
 
 
@@ -176,7 +178,7 @@ Exp 		: Exp ADDSUB Exp 							{inst("POP"); inst("SWAP"); inst("POP"); add_sub($
 			| LPAR Exp RPAR 							{$$ = $2;}
 			/*| LValue*/
 			| NUM 										{instarg("SET", $1); inst("PUSH");}
-			/*| IDENT LPAR Arguments RPAR												{}*/
+			/*| IDENT LPAR Arguments RPAR				{}*/
 		
 	
 Print 		: /* rien */ 
