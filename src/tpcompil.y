@@ -15,6 +15,7 @@
 	void inst(const char *);
 	void instarg(const char *,int);
 	void comment(const char *);
+	int getsigne(char addsub);
 
 %}
 
@@ -36,7 +37,7 @@
 %type <ident> IDENT
 %type <entier> NUM NombreSigne
 %type <type> TYPE
-%type <caractere> CARACTERE
+%type <caractere> CARACTERE ADDSUB
 
 %%
 
@@ -55,7 +56,7 @@ Litteral : NombreSigne {putOnStack(stack_cur-1, $1);}
 	;
 	
 NombreSigne : NUM { $$ = $1;}
-	| ADDSUB NUM { $$ = $2;}
+	| ADDSUB NUM { $$ = (getsigne($1) * $2);}
 	;
 	
 DeclVarPuisFonct : TYPE ListVar PV DeclVarPuisFonct
@@ -102,10 +103,16 @@ void comment(const char *s){
   printf("#%s\n",s);
 }
 
+int getsigne(char addsub){
+	if(addsub == '+')
+		return 1;
+	return -1;
+}
+
 int main(int argc, char** argv) {
-  if(argc==2){
+ /* if(argc==2){
 	if( strcmp(argv[1], "-o") == 0)
-		yyout = fopen(argv[1],"r");
+		yyout = fopen(argv[1],"w");
   }
   else if(argc==1){
     yyout = stdout;
@@ -113,7 +120,8 @@ int main(int argc, char** argv) {
   else{
     fprintf(stderr,"usage: %s [src]\n",argv[0]);
     return 1;
-  }
+  }*/
+  yyin = stdin;
   yyparse();
   endProgram();
   return 0;
