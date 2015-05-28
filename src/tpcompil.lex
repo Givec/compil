@@ -3,14 +3,19 @@ include <string.h>
 %}
 %%
 [ \t\n]+ ;
-/*2 types reserves, soit "entier" soit "caractere"*/
 "entier" {strcpy(*(&yylval.type), yytext); return TYPE;}
 "caractere" {strcpy(*(&yylval.type), yytext); return TYPE;}
 
 
 [0-9]+ {sscanf(yytext,"%d",&yylval.entier); return NUM;}
 [\'a-zA-Z\'] {(yylval.caractere = yytext[1]); return CARACTERE;}
+
+
 "const" {return CONST;}
+"void" {return VOID;}
+"readch" {return READCH;}
+"read" {return READ;}
+"main" {return MAIN;}
 
 
 [">", "<", "==", "<=", ">=", "!="] {(strcpy(yylval.comp,yytext)); return COMP;}
@@ -19,7 +24,7 @@ include <string.h>
 
 
 ["&&", "||"] {strcpy(yylval.bool, yytext); return BOPE;}
-"!" {(yylval.caractere = yytext[0]); return NEGATION;}
+"!" { /*(yylval.caractere = yytext[0]);*/ return NEGATION;}
 
 
 "=" {return EGAL;}
