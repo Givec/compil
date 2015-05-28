@@ -19,8 +19,11 @@ typedef struct {
 	int addr_stack; /* addr on the stack */
 } symb;
 
-symb table_symb[20];
+static int table_symb_size;
+symb* table_symb;
 
+void initTableSymb();
+int verifyConst(const char* id);
 void add_symb(const char* id, int is_const, int addr);
 int getIdAddrOnStack(char* id, int stack_max);
 void putOnStack(int addr, int val);
