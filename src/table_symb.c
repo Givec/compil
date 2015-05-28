@@ -30,9 +30,37 @@ void putOnStack(int addr, int val){
 
 }
 
+/* Check if the symb id is const */
+int verifyConst(const char* id){
+	int i;
+	
+	for(i=0; i<table_symb_size; i++){
+		if(strcmp(table_symb[i].id, id) == 0)
+			return table_symb[i].is_const;
+	}
+	
+	return -1;	
+}
+
+void initTableSymb(){
+	
+	table_symb = (symb*)malloc(sizeof(symb));
+	table_symb_size = 1;
+	if(table_symb == NULL)
+		fprintf(stderr, "Initialisation failure\n");
+	
+}
+	
+
 void add_symb(const char* id, int is_const, int addr){
-	/* le programme est limité à 20 constantes pour l'instant */
 	static int index = 0;
+	
+	if(index >= table_symb_size){
+		table_symb_size++;
+		table_symb = (symb*) realloc(table_symb, sizeof(symb) * table_symb_size);
+		if(table_symb == NULL)
+			fprintf(stderrn, "Initialisation failure\n");
+	}
 	
 	memcpy(table_symb[index].id, id, strlen(id));
 	table_symb[index].is_const = is_const;
