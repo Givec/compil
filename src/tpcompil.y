@@ -5,6 +5,7 @@
 #include <string.h>
 #include "../include/table_symb.h"
 
+	FILE* yyout;
 	int yyerror(char*);
 	int yylex();
 	FILE* yyin; 
@@ -16,6 +17,8 @@
 	void instarg(const char *,int);
 	void comment(const char *);
 	int getsigne(char addsub);
+	
+/*	typedef enum { ENT, CAR } type_var; */
 
 %}
 
@@ -110,18 +113,20 @@ int getsigne(char addsub){
 }
 
 int main(int argc, char** argv) {
- /* if(argc==2){
+  if(argc==3){
 	if( strcmp(argv[1], "-o") == 0)
-		yyout = fopen(argv[1],"w");
+		yyout = fopen("test.vm","w");
+		yyin = fopen(argv[2], "r");
   }
   else if(argc==1){
     yyout = stdout;
+    yyin = stdin;
   }
   else{
     fprintf(stderr,"usage: %s [src]\n",argv[0]);
     return 1;
-  }*/
-  yyin = stdin;
+  }
+  
   yyparse();
   endProgram();
   return 0;
