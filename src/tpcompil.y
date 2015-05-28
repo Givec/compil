@@ -27,14 +27,22 @@
    char type[50];
    char caractere;
    int entier;
+   char comp[3];
+   char bool[3];
 }
 
 %token NUM CARACTERE
+%token IDENT
 %token TYPE
-%token PV VRG
+%token COMP
+%token ADDSUB
+%token DIVSTAR
+%token BOPE
+%token NEGATION
+%token EGAL, PV, VRG, LPAR, RPAR, LACC, RACC, LSQB, RSQB
+
 %token CONST
 %token IDENT
-%token EGAL ADDSUB
 %token PRINT
 
 %type <ident> IDENT
