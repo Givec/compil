@@ -68,6 +68,14 @@ typedef enum bool{
 %type <type> TYPE
 %type <caractere> CARACTERE ADDSUB
 
+%left BOPE
+%left COMP
+%left ADDSUB
+%left DIVSTAR
+%left NEGATION
+/*%left ADDSUB unaire, avec %prec?*/ 
+
+
 %%
 
 PROG 		: DeclConst DeclVarPuisFonct Print
