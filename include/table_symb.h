@@ -10,6 +10,8 @@ extern void inst(const char *);
 extern void instarg(const char *,int);
 extern void comment(const char *);
 
+typedef enum { ENT, CAR, VOI } type_var;
+
 /* length max for an id */
 #define LEN_ID 50
 
@@ -19,27 +21,29 @@ extern void comment(const char *);
 typedef struct {
 	char id[LEN_ID]; /* NOM ID */
 	int is_const; /* is it a const ? */
-	int addr_stack; /* addr on the stack */
+	int addr; /* addr on the stack */
+	type_var type; /* enum for the type */
 } symb;
 
 typedef struct {
 	char id[LEN_ID]; /* NOM FUNCTION */
-	int addr_fun; /* adresse de la fonction */
+	int addr; /* adresse de la fonction */
 	int nb_param;
 	int nb_alloc;
 	symb variables[MAX_VARIABLE];
+	type_var type; /* enum type for the function */
 } fun_ident;
 
-static int table_symb_size;
-static int table_fun_size;
+int table_symb_size;
+int table_fun_size;
 symb* table_symb;
 fun_ident* table_fun;
 
 void initTableSymb();
 void initTableFun();
 int verifyConst(const char* id);
-void add_symb(const char* id, int is_const, int addr, int cur_fun_index);
-void add_fun(const char* id, int nb_param, int addr);
+void add_symb(const char* id, int is_const, int addr, int cur_fun_index, type_var type);
+void add_fun(const char* id, int nb_param, int addr, type_var type);
 int getIdAddrOnStack(char* id, int stack_max);
 void putOnStack(int addr, int val);
 

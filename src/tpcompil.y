@@ -5,12 +5,19 @@
 #include <string.h>
 #include "../include/table_symb.h"
 
+typedef enum { false, true }Bool;
+
 	FILE* yyout;
 	int yyerror(char*);
 	int yylex();
 	FILE* yyin; 
 	int stack_cur = 0;
 	int jump_label=0; 
+	
+	int cur_fun_index = -1;
+	int nb_arg_cur = 0;
+	type_var cur_type;
+	int cur_const;
 	
 	void alloc(int* cur);
 	void inst(const char *);
@@ -24,18 +31,9 @@
 	void comp( char* bop);
 	void neg(void);
 	void bope (char* bop);
-
-	
-/*	typedef enum { ENT, CAR } type_var; */
-
-typedef enum bool{
- 	false, true
-	}Bool;
- 
-
-
-
-
+	int newLabel(void);
+	int newLabelFun(void);
+	type_var getType(char* type); /* retourne l'enum en fonction du type */
 
 %}
 
@@ -48,26 +46,6 @@ typedef enum bool{
    char bool[3];
 }
 
-%token NUM CARACTERE
-%token IDENT
-%token TYPE
-%token COMP
-%token ADDSUB
-%token DIVSTAR
-%token BOPE
-%token NEGATION
-%token EGAL, PV, VRG, LPAR, RPAR, LACC, RACC, LSQB, RSQB
-
-%token CONST
-%token VOID
-%token IDENT
-%token MAIN, PRINT, READ, READCH
-
-%type <ident> IDENT
-%type <entier> NUM NombreSigne
-%type <type> TYPE
-%type <caractere> CARACTERE ADDSUB
-
 %left BOPE
 %left COMP
 %left ADDSUB
@@ -75,18 +53,40 @@ typedef enum bool{
 %left NEGATION
 /*%left ADDSUB unaire, avec %prec?*/ 
 
+%token NUM CARACTERE
+%token IDENT
+
+%token COMP
+%token ADDSUB
+%token DIVSTAR
+%token BOPE
+%token NEGATION WHILE IF ELSE
+%token EGAL PV VRG LPAR RPAR LACC RACC LSQB RSQB
+
+%token CONST
+%token VOID RETURN
+%token MAIN PRINT READ READCH
+%token TYPE TYPEFUN
+%type <ident> IDENT
+%type <entier> NUM NombreSigne Exp
+%type <type> TYPE TYPEFUN
+%type <caractere> CARACTERE ADDSUB DIVSTAR
+%type <comp> BOPE COMP
+
+
+
 
 %%
 
-PROG 		: DeclConst DeclVarPuisFonct Print
+PROG 		: DeclConst DeclVarPuisFonct DeclMain
 			;
 
-DeclConst 	: DeclConst CONST ListConst PV 
+DeclConst 	: CONST TYPE {cur_type = getType($2); cur_const = 1;} ListConst PV {cur_const = 0;} DeclConst
 			| /* rien */
 			;
 	
-ListConst 	: ListConst VRG 							{alloc(&stack_cur);} IDENT EGAL Litteral { add_symb($4, 1, stack_cur-1); } 
-			| 											{alloc(&stack_cur);} IDENT { add_symb($2, 1, stack_cur-1);} EGAL Litteral
+ListConst 	: ListConst VRG {alloc(&stack_cur);} IDENT EGAL Litteral
+			| {alloc(&stack_cur);} IDENT EGAL Litteral
 			;
 	
 Litteral 	: NombreSigne								{putOnStack(stack_cur-1, $1);}
@@ -97,15 +97,16 @@ NombreSigne : NUM 										{ $$ = $1;}
 			| ADDSUB NUM 								{ $$ = (getsigne($1) * $2);}
 			;
 	
-DeclVarPuisFonct : TYPE ListVar PV DeclVarPuisFonct
-			| /* DeclFonct */
+DeclVarPuisFonct : TYPE { cur_type = getType($1);} ListVar PV DeclVarPuisFonct
+			| DeclFonct
+			| /* rien */
 			;
 	
 ListVar 	: ListVar VRG {alloc(&stack_cur);} Ident 
 			| {alloc(&stack_cur);} Ident
 			;
 	
-Ident 		: IDENT 									{ add_symb($1, 0, stack_cur-1);}
+Ident 		: IDENT 									{ add_symb($1, cur_const, stack_cur-1, cur_fun_index, cur_type);}
 			;
 	
 Tab			: Tab LSQB NUM RSQB
@@ -125,16 +126,16 @@ DeclFonct	: DeclFonct DeclUneFonct
 DeclUneFonct: EnTeteFonct Corps
 			;
 
-EnTeteFonct	: TYPE IDENT LPAR Parametres RPAR
-			| VOID IDENT LPAR Parametres RPAR
+EnTeteFonct	: { cur_fun_index = newLabelFun();} TYPEFUN IDENT LPAR Parametres RPAR { add_fun($3, nb_arg_cur, newLabel(), getType($2));}
+			| { cur_fun_index = newLabelFun();} VOID IDENT LPAR Parametres RPAR { add_fun($3, nb_arg_cur, newLabel(), VOI);}
 			;
 			
-Parametres	: VOID
+Parametres	: VOID {nb_arg_cur = 0; /* pas d'args */}
 			| ListTypVar
 			;
 			
-ListTypVar	: ListTypVar VRG TYPE IDENT
-			| TYPE IDENT
+ListTypVar	: ListTypVar VRG TYPE IDENT {nb_arg_cur++;}
+			| TYPE IDENT {nb_arg_cur++; }
 			;
 
 Corps		: LACC DeclConst DeclVar SuiteInstr RACC
@@ -154,7 +155,7 @@ InstrComp	: LACC SuiteInstr RACC
 Instr		: LValue EGAL Exp PV
 			| IF LPAR Exp RPAR Instr
 			| IF LPAR Exp RPAR Instr ELSE Instr
-			| WHILE LPAR Exp RPAR Instr				
+			| WHILE LPAR Exp RPAR Instr		
 			| RETURN Exp PV								{inst("POP"); inst("RETURN");}
 			| RETURN PV									{inst("RETURN");}
 			| IDENT LPAR Arguments RPAR PV
@@ -171,7 +172,7 @@ Arguments 	: ListExp
 			| 
 			;
           
-LValue		: IDENT TabExp
+LValue		: IDENT /* TabExp */
 			;
 				
 ListExp 	: ListExp VRG Exp
@@ -188,12 +189,6 @@ Exp 		: Exp ADDSUB Exp 							{inst("POP"); inst("SWAP"); inst("POP"); add_sub($
 			| NUM 										{instarg("SET", $1); inst("PUSH");}
 			/*| IDENT LPAR Arguments RPAR				{}*/
 		
-	
-Print 		: /* rien */ 
-			| Print PRINT IDENT PV 						{ inst("PUSH"); instarg("SET", getIdAddrOnStack($3, stack_cur)); inst("LOAD"); inst("WRITE"); inst("POP");} 
-			;
-	
-
 %%
 
 
@@ -203,7 +198,7 @@ int yyerror(char* s) {
 }
 
 void endProgram() {
-  printf("HALT\n");
+  fprintf(yyout, "HALT\n");
 }
 
 void alloc(int* cur){
@@ -212,21 +207,27 @@ void alloc(int* cur){
 }	
 
 void inst(const char *s){
-  printf("%s\n",s);
+  fprintf(yyout, "%s\n",s);
 }
 
 void instarg(const char *s,int n){
-  printf("%s\t%d\n",s,n);
+  fprintf(yyout, "%s\t%d\n",s,n);
 }
 
 void comment(const char *s){
-  printf("#%s\n",s);
+  fprintf(yyout, "#%s\n",s);
 }
 
 int getsigne(char addsub){
 	if(addsub == '+')
 		return 1;
 	return -1;
+}
+
+type_var getType(char* type){
+	if(strcpy(type, "entier") == 0)
+		return ENT;
+	return CAR;
 }
 
 void add_sub(char op) {
@@ -275,7 +276,7 @@ void neg(void){
 }
 
 void bope (char* bop){
-	if( strcmp(bop,"&&") == 0)
+	if( strcmp(bop,"&&") == 0){
 		/*
 		inst("EQUAL");
 		inst("SWAP");
@@ -283,23 +284,47 @@ void bope (char* bop){
 		inst("EQUAL");
 		*/
 		inst("ADD");
-		inst("SWAP);
+		inst("SWAP");
 		instarg("SET",2);
 		inst("EQUAL");
-	else
+	} else {
 		inst("ADD");
 		inst("SWAP");
 		instarg("SET",0);
 		inst("NOTEQ");
-		
+	}	
+}
+
+int newLabel(void){
+	static int label = 0;
+	return label++;
+}
+
+int newLabelFun(void){
+	static int labelFun = 0;
+	return labelFun++;
 }
 
 
 int main(int argc, char** argv) {
   if(argc==3){
-	if( strcmp(argv[1], "-o") == 0)
-		yyout = fopen("test.vm","w");
-		yyin = fopen(argv[2], "r");
+	if( strcmp(argv[2], "-o") == 0){
+		int n = strlen(argv[1]);
+		char* input_file = (char*) malloc(sizeof(char) * (n - 1));
+		if(strcmp(argv[1] + (n-4), ".tpc") == 0){
+			memcpy(input_file, argv[1], n-4);
+			memcpy(input_file + (n-4), ".vm", 3);
+			
+			yyout = fopen(input_file,"w");
+			yyin = fopen(argv[1], "r");
+		} else {
+			fprintf(stderr,"usage: %s [src] -o\n",argv[0]);
+			return 1;
+		}
+	} else {
+		fprintf(stderr,"usage: %s [src] -o\n",argv[0]);
+		return 1;
+	}
   }
   else if(argc==1){
     yyout = stdout;
@@ -309,6 +334,10 @@ int main(int argc, char** argv) {
     fprintf(stderr,"usage: %s [src]\n",argv[0]);
     return 1;
   }
+  
+  /* initialisation tables */
+  initTableSymb();
+  initTableFun();
   
   yyparse();
   endProgram();

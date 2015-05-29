@@ -59,8 +59,8 @@ void initTableFun(){
 	
 }
 
-void add_fun(const char* id, int nb_param, int addr){
-	static index = 0;
+void add_fun(const char* id, int nb_param, int addr, type_var type){
+	static int index = 0;
 	
 	if(index >= table_fun_size){
 		table_fun_size++;
@@ -71,13 +71,14 @@ void add_fun(const char* id, int nb_param, int addr){
 
 	memcpy(table_fun[index].id, id, strlen(id));
 	table_fun[index].nb_param = nb_param;
-	table_fun[index].addr_fun = addr;
+	table_fun[index].addr = addr;
+	table_fun[index].type = type;
 	
 	index++;
 	
 }	
 
-void add_symb(const char* id, int is_const, int addr, int cur_fun_index){
+void add_symb(const char* id, int is_const, int addr, int cur_fun_index, type_var type){
 	static int index = 0;
 	
 	symb* tmp = NULL;
@@ -86,21 +87,24 @@ void add_symb(const char* id, int is_const, int addr, int cur_fun_index){
 	if(cur_fun_index == -1){
 		tmp = table_symb;
 		tmp_size = &table_symb_size;
+		
 	} else {
 		tmp = table_fun[cur_fun_index].variables;
-		tmp_size = table_fun[cur_fun_index].nb_alloc;
+		tmp_size = &(table_fun[cur_fun_index].nb_alloc);
 	}		
 	
 	if(index >= *tmp_size){
-		*tmp_size++;
+		*tmp_size = *tmp_size + 1;
 		tmp = (symb*) realloc(tmp, sizeof(symb) * (*tmp_size));
 		if(tmp == NULL)
-			fprintf(stderrn, "Initialisation failure\n");
+			fprintf(stderr, "Initialisation failure\n");
 	}
 	
 	memcpy(tmp[index].id, id, strlen(id));
-	tmp[index].is_const = is_const;
-	tmp[index].addr_stack = addr;
+	if(cur_fun_index == -1)
+		tmp[index].is_const = is_const;
+	tmp[index].addr = addr;
+	tmp[index].type = type;
 	
 	index++;
 }
