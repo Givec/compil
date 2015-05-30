@@ -141,8 +141,15 @@ void add_symb(const char* id, int is_const, int addr, int cur_fun_index, type_va
 	index++;
 }
 
-void putArgsAndStartFun(int stack_cur, char* id){
+void startFun(int stack_cur, char* id){
 	
+	int i;
+	for(i=0; i<table_fun_size; i++){
+		if(0 == strcmp(id, table_fun[i].id)){
+			instarg("CALL", table_fun[i].addr);
+			return;
+		}
+	}
 	
 	
 }

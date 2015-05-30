@@ -76,9 +76,6 @@ typedef enum { false, true }Bool;
 %type <caractere> CARACTERE ADDSUB DIVSTAR
 %type <comp> BOPE COMP
 
-
-
-
 %%
 
 PROG 		: DeclConst DeclVarPuisFonct DeclMain
@@ -101,7 +98,7 @@ NombreSigne : NUM 										{ $$ = $1;}
 			;
 	
 DeclVarPuisFonct : TYPE { cur_type = getType($1);} ListVar PV DeclVarPuisFonct
-			| DeclFonct
+			| {instarg("JUMP",0);} DeclFonct
 			| /* rien */
 			;
 	
@@ -116,7 +113,7 @@ Tab			: Tab LSQB NUM RSQB
 			|
 			; 
 			
-DeclMain	: EnTeteMain {cur_fun_index = -1;} Corps
+DeclMain	: EnTeteMain {cur_fun_index = -1; instarg("LABEL", 0);} Corps
 			;
 			
 EnTeteMain	: MAIN LPAR RPAR
@@ -126,11 +123,11 @@ DeclFonct	: DeclFonct DeclUneFonct
 			| DeclUneFonct
 			;
 			
-DeclUneFonct: EnTeteFonct Corps
+DeclUneFonct: EnTeteFonct {instarg("LABEL", cur_fun_index);} Corps
 			;
 
-EnTeteFonct	: { cur_fun_index = newLabelFun();} TYPEFUN IDENT LPAR Parametres RPAR { add_fun($3, nb_arg_cur, cur_fun_index, getType($2));}
-			| { cur_fun_index = newLabelFun();} VOID IDENT LPAR Parametres RPAR { add_fun($3, nb_arg_cur, cur_fun_index, VOI);}
+EnTeteFonct	: { cur_fun_index = newLabel();} TYPEFUN IDENT LPAR Parametres RPAR { add_fun($3, nb_arg_cur, cur_fun_index, getType($2));}
+			| { cur_fun_index = newLabel();} VOID IDENT LPAR Parametres RPAR { add_fun($3, nb_arg_cur, cur_fun_index, VOI);}
 			;
 			
 Parametres	: VOID {nb_arg_cur = 0; /* pas d'args */}
@@ -171,7 +168,7 @@ Instr		: LValue EGAL Exp PV
 			| WHILE LPAR {instarg("LABEL", jump_label = newLabel());} Exp JUMPFALSE RPAR Instr {instarg("JUMP", jump_label);} {instarg("LABEL", jump_fin_while);}		
 			| RETURN Exp PV								{inst("POP"); inst("RETURN");}
 			| RETURN PV									{inst("RETURN");}
-			| IDENT LPAR Arguments RPAR PV
+			| IDENT LPAR Arguments RPAR PV				{startFun(stack_cur, $1);}
 			| READ LPAR IDENT RPAR PV
 			| READCH LPAR IDENT RPAR PV
 			| PRINT LPAR Exp RPAR PV					{inst("POP");inst("WRITE");}
@@ -185,7 +182,7 @@ Arguments 	: ListExp
 			| 
 			;
           
-LValue		: IDENT /* TabExp */ 						{ if(NULL == searchInTable($1, cur_fun_index)) {yyerror("Undeclared variable");} $$ = getIdAddrOnStack($1, cur_fun_index);}
+LValue		: IDENT /* TabExp */ 						{ /* if(NULL == searchInTable($1, cur_fun_index)) {yyerror("Undeclared variable");}*/ $$ = getIdAddrOnStack($1, cur_fun_index);}
 			;
 				
 ListExp 	: ListExp VRG Exp
@@ -200,7 +197,7 @@ Exp 		: Exp ADDSUB Exp 							{inst("POP"); inst("SWAP"); inst("POP"); add_sub($
 			| LPAR Exp RPAR 							{$$ = $2;}
 			| LValue									{instarg("SET", $1); inst("LOAD"); inst("PUSH"); }
 			| NUM 										{instarg("SET", $1); inst("PUSH");}
-			/*| IDENT LPAR Arguments RPAR				{}*/
+			| IDENT LPAR Arguments RPAR					{startFun(stack_cur, $1);}
 		
 %%
 
@@ -309,7 +306,7 @@ void bope (char* bop){
 }
 
 int newLabel(void){
-	static int label = 0;
+	static int label = 1;
 	return label++;
 }
 

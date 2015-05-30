@@ -16,6 +16,7 @@
 "while" {return WHILE;}
 "if" {return IF;}
 "else" {return ELSE;}
+"return" {return RETURN;}
 "=" {return EGAL;}
 ";" {return PV;}
 "," {return VRG;}

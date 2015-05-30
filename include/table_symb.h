@@ -47,6 +47,7 @@ void add_symb(const char* id, int is_const, int addr, int cur_fun_index, type_va
 void add_fun(const char* id, int nb_param, int addr, type_var type);
 int getIdAddrOnStack(char* id, int stack_max);
 void putOnStack(int addr, int val);
+void startFun(int stack_cur, char* id);
 
 
 
