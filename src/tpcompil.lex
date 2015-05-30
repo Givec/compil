@@ -14,6 +14,8 @@
 "read" {return READ;}
 "main" {return MAIN;}
 "while" {return WHILE;}
+"if" {return IF;}
+"else" {return ELSE;}
 "=" {return EGAL;}
 ";" {return PV;}
 "," {return VRG;}

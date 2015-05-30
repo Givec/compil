@@ -47,6 +47,21 @@ typedef enum { false, true }Bool;
    char bool[3];
 }
 
+%token NUM CARACTERE
+%token IDENT
+%token COMP
+%token ADDSUB
+%token DIVSTAR
+%token BOPE
+%token NEGATION WHILE IF ELSE
+%token EGAL PV VRG LPAR RPAR LACC RACC LSQB RSQB
+%token CONST
+%token VOID RETURN
+%token MAIN PRINT READ READCH
+%token TYPE TYPEFUN
+
+%left SEULIF
+%left ELSE
 %left BOPE
 %left COMP
 %left ADDSUB
@@ -54,22 +69,9 @@ typedef enum { false, true }Bool;
 %left NEGATION
 /*%left ADDSUB unaire, avec %prec?*/ 
 
-%token NUM CARACTERE
-%token IDENT
 
-%token COMP
-%token ADDSUB
-%token DIVSTAR
-%token BOPE
-%token NEGATION WHILE IF ELSE
-%token EGAL PV VRG LPAR RPAR LACC RACC LSQB RSQB
-
-%token CONST
-%token VOID RETURN
-%token MAIN PRINT READ READCH
-%token TYPE TYPEFUN
 %type <ident> IDENT 
-%type <entier> NUM NombreSigne Exp LValue
+%type <entier> NUM NombreSigne Exp LValue JUMPIF JUMPE
 %type <type> TYPE TYPEFUN
 %type <caractere> CARACTERE ADDSUB DIVSTAR
 %type <comp> BOPE COMP
@@ -156,11 +158,16 @@ InstrComp	: LACC SuiteInstr RACC
 JUMPFALSE	: {inst("POP"); instarg("JUMPF", jump_fin_while = newLabel());}
 			;
 			
-WHILEFALSE	:
+JUMPIF 		: {inst("POP");	instarg("JUMPF", $$ = newLabel());}
+			;
+			
+JUMPE 		: {instarg("JUMP", $$ = newLabel());}
+			;
+			
 			
 Instr		: LValue EGAL Exp PV
-			| IF LPAR Exp RPAR Instr
-			| IF LPAR Exp RPAR Instr ELSE Instr
+			| IF LPAR Exp RPAR JUMPIF Instr %prec SEULIF { instarg("LABEL",$5); }
+			| IF LPAR Exp RPAR JUMPIF Instr ELSE JUMPE { instarg("LABEL",$5); } Instr { instarg("LABEL",$8); }
 			| WHILE LPAR {instarg("LABEL", jump_label = newLabel());} Exp JUMPFALSE RPAR Instr {instarg("JUMP", jump_label);} {instarg("LABEL", jump_fin_while);}		
 			| RETURN Exp PV								{inst("POP"); inst("RETURN");}
 			| RETURN PV									{inst("RETURN");}
@@ -178,7 +185,7 @@ Arguments 	: ListExp
 			| 
 			;
           
-LValue		: IDENT /* TabExp */ 						{ if(verifyConst($1, cur_fun_index) == -1) {yyerror("Undeclared variable");} $$ = getIdAddrOnStack($1, cur_fun_index);}
+LValue		: IDENT /* TabExp */ 						{ if(NULL == searchInTable($1, cur_fun_index)) {yyerror("Undeclared variable");} $$ = getIdAddrOnStack($1, cur_fun_index);}
 			;
 				
 ListExp 	: ListExp VRG Exp

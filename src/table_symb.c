@@ -25,6 +25,7 @@ int getIdAddrOnStack(char* id, int cur_fun_index){
 	strcat(err_msg, id);	
 	
 	yyerror(err_msg);
+	return -1;
 }
 
 void putOnStack(int addr, int val){
@@ -116,6 +117,12 @@ void add_symb(const char* id, int is_const, int addr, int cur_fun_index, type_va
 	
 	symb* tmp = NULL;
 	int* tmp_size = NULL;
+	
+	/* on verifie que la variable n'est pas déjà dans la table des symboles générale */
+	if(NULL != searchInTable(id, cur_fun_index)){
+		yyerror("Variable already defined");
+		exit(EXIT_FAILURE);
+	}
 	
 	tmp = getTableOfFunctionByIndex(cur_fun_index, &tmp_size);		
 	
