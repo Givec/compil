@@ -12,10 +12,11 @@ typedef enum { false, true }Bool;
 	int yylex();
 	FILE* yyin; 
 	int stack_cur = 0;
-	int jump_label=0; 
 	
 	int cur_fun_index = -1;
 	int nb_arg_cur = 0;
+	int jump_label = 0;
+	int jump_fin_while = 0;
 	type_var cur_type;
 	int cur_const;
 	
@@ -152,10 +153,15 @@ SuiteInstr	: SuiteInstr Instr
 InstrComp	: LACC SuiteInstr RACC
 			;
 			
+JUMPFALSE	: {inst("POP"); instarg("JUMPF", jump_fin_while = newLabel());}
+			;
+			
+WHILEFALSE	:
+			
 Instr		: LValue EGAL Exp PV
 			| IF LPAR Exp RPAR Instr
 			| IF LPAR Exp RPAR Instr ELSE Instr
-			| WHILE LPAR Exp RPAR Instr		
+			| WHILE LPAR {instarg("LABEL", jump_label = newLabel());} Exp JUMPFALSE RPAR Instr {instarg("JUMP", jump_label);} {instarg("LABEL", jump_fin_while);}		
 			| RETURN Exp PV								{inst("POP"); inst("RETURN");}
 			| RETURN PV									{inst("RETURN");}
 			| IDENT LPAR Arguments RPAR PV

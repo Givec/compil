@@ -13,6 +13,7 @@
 "readch" {return READCH;}
 "read" {return READ;}
 "main" {return MAIN;}
+"while" {return WHILE;}
 "=" {return EGAL;}
 ";" {return PV;}
 "," {return VRG;}
