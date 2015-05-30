@@ -1,5 +1,6 @@
 const entier i = 5;
 
 main(){
-	print ( 5 );
+	
+	print ( i );
 }

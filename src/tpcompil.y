@@ -67,8 +67,8 @@ typedef enum { false, true }Bool;
 %token VOID RETURN
 %token MAIN PRINT READ READCH
 %token TYPE TYPEFUN
-%type <ident> IDENT
-%type <entier> NUM NombreSigne Exp
+%type <ident> IDENT 
+%type <entier> NUM NombreSigne Exp LValue
 %type <type> TYPE TYPEFUN
 %type <caractere> CARACTERE ADDSUB DIVSTAR
 %type <comp> BOPE COMP
@@ -113,7 +113,7 @@ Tab			: Tab LSQB NUM RSQB
 			|
 			; 
 			
-DeclMain	: EnTeteMain Corps
+DeclMain	: EnTeteMain {cur_fun_index = -1;} Corps
 			;
 			
 EnTeteMain	: MAIN LPAR RPAR
@@ -126,8 +126,8 @@ DeclFonct	: DeclFonct DeclUneFonct
 DeclUneFonct: EnTeteFonct Corps
 			;
 
-EnTeteFonct	: { cur_fun_index = newLabelFun();} TYPEFUN IDENT LPAR Parametres RPAR { add_fun($3, nb_arg_cur, newLabel(), getType($2));}
-			| { cur_fun_index = newLabelFun();} VOID IDENT LPAR Parametres RPAR { add_fun($3, nb_arg_cur, newLabel(), VOI);}
+EnTeteFonct	: { cur_fun_index = newLabelFun();} TYPEFUN IDENT LPAR Parametres RPAR { add_fun($3, nb_arg_cur, cur_fun_index, getType($2));}
+			| { cur_fun_index = newLabelFun();} VOID IDENT LPAR Parametres RPAR { add_fun($3, nb_arg_cur, cur_fun_index, VOI);}
 			;
 			
 Parametres	: VOID {nb_arg_cur = 0; /* pas d'args */}
@@ -172,7 +172,7 @@ Arguments 	: ListExp
 			| 
 			;
           
-LValue		: IDENT /* TabExp */
+LValue		: IDENT /* TabExp */ 						{ if(verifyConst($1, cur_fun_index) == -1) {yyerror("Undeclared variable");} $$ = getIdAddrOnStack($1, cur_fun_index);}
 			;
 				
 ListExp 	: ListExp VRG Exp
@@ -185,7 +185,7 @@ Exp 		: Exp ADDSUB Exp 							{inst("POP"); inst("SWAP"); inst("POP"); add_sub($
 			| Exp BOPE Exp								{inst("POP"); inst("SWAP"); inst("POP"); bope($2); inst("PUSH");}
 			| NEGATION Exp								{inst("POP"); neg(); inst("PUSH");}
 			| LPAR Exp RPAR 							{$$ = $2;}
-			/*| LValue*/
+			| LValue									{instarg("SET", $1); inst("LOAD"); inst("PUSH"); }
 			| NUM 										{instarg("SET", $1); inst("PUSH");}
 			/*| IDENT LPAR Arguments RPAR				{}*/
 		

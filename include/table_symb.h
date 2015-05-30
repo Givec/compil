@@ -41,7 +41,8 @@ fun_ident* table_fun;
 
 void initTableSymb();
 void initTableFun();
-int verifyConst(const char* id);
+symb* searchInTable(const char* id, int cur_fun_index);
+int verifyConst(const char* id, int cur_fun_index);
 void add_symb(const char* id, int is_const, int addr, int cur_fun_index, type_var type);
 void add_fun(const char* id, int nb_param, int addr, type_var type);
 int getIdAddrOnStack(char* id, int stack_max);
