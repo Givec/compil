@@ -67,7 +67,8 @@ typedef enum { false, true }Bool;
 %left ADDSUB
 %left DIVSTAR
 %left NEGATION
-/*%left ADDSUB unaire, avec %prec?*/ 
+%left UNAIRE    /*operation unaire toute derniere*/
+
 
 
 %type <ident> IDENT 
@@ -191,7 +192,7 @@ ListExp 	: ListExp VRG Exp
 Exp 		: Exp ADDSUB Exp 							{inst("POP"); inst("SWAP"); inst("POP"); add_sub($2); inst("PUSH");}
 			| Exp DIVSTAR Exp							{inst("POP"); inst("SWAP"); inst("POP"); div_star($2); inst("PUSH");}
 			| Exp COMP Exp 								{ inst("POP"); inst("SWAP"); inst("POP"); comp($2);}
-			| ADDSUB Exp 								{if($1 == '-'){ inst("POP"); inst("NEG"); inst("PUSH");}}
+			| ADDSUB Exp %prec UNAIRE								{if($1 == '-'){ inst("POP"); inst("NEG"); inst("PUSH");}}
 			| Exp BOPE Exp								{inst("POP"); inst("SWAP"); inst("POP"); bope($2); inst("PUSH");}
 			| NEGATION Exp								{inst("POP"); neg(); inst("PUSH");}
 			| LPAR Exp RPAR 							{$$ = $2;}
@@ -272,27 +273,21 @@ void comp( char* bop){
 }
 
 void neg(void){
-	inst("SWAP"); 	/*reg1 = reg2*/
-	inst("PUSH");	/*conservation de la valeur ancienne reg2*/
+	inst("SWAP");   /*reg1 = reg2*/
+	inst("PUSH");  	/*conservation de la valeur ancienne reg2*/
 	instarg("SET",1);
-	inst("ADD");	/*la somme de reg1 et reg2*/
-	inst("SWAP");	/*reg 2 = la somme*/ 
+	inst("ADD");	  /*la somme de reg1 et reg2*/
+	inst("SWAP");	  /*reg 2 = la somme*/ 
 	instarg("SET",2);
 	inst("SWAP");
-	inst("MOD");	/*la somme % 2*/
-	inst("SWAP");	/*le resultat de negation en reg2 pour pop reg2 precedent*/
+	inst("MOD");    /*la somme % 2*/
+	inst("SWAP");   /*le resultat de negation en reg2 pour pop reg2 precedent*/
 	inst("POP");
-	inst("SWAP");	/*resultat negation en reg1*/
+	inst("SWAP");   /*resultat negation en reg1*/
 }
 
 void bope (char* bop){
 	if( strcmp(bop,"&&") == 0){
-		/*
-		inst("EQUAL");
-		inst("SWAP");
-		instarg("SET",1);
-		inst("EQUAL");
-		*/
 		inst("ADD");
 		inst("SWAP");
 		instarg("SET",2);
