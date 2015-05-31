@@ -15,13 +15,13 @@ int getIdAddrOnStack(char* id, int cur_fun_index){
 	
 	char err_msg[80];
 	
-	int *size;
+	int *size = NULL;
 	symb* tmp_symb = getTableOfFunctionByIndex(cur_fun_index, &size);
 	
 	if(NULL != tmp_symb)
 		return tmp_symb->addr;
 	
-	strcpy(err_msg, "Uninitialized variable ");
+	strcpy(err_msg, "Undeclared variable ");
 	strcat(err_msg, id);	
 	
 	yyerror(err_msg);
@@ -49,9 +49,8 @@ symb* searchInTable(const char* id, int cur_fun_index){
 	if(NULL == tmp_symb)
 		/* erreur de function introuvable */
 		return NULL;
-	
 	for(i=0; i<(*size); i++){
-		if(strcmp(tmp_symb[i].id, id) == 0)
+		if(strncmp(tmp_symb[i].id, id, strlen(id)) == 0)
 			return &tmp_symb[i];
 	}
 	
@@ -75,26 +74,19 @@ int verifyConst(const char* id, int cur_fun_index){
 	return tmp_symb->is_const;
 }
 
-void initTableSymb(){
-	
-	table_symb = (symb*)malloc(sizeof(symb));
-	table_symb_size = 1;
-	if(table_symb == NULL)
-		fprintf(stderr, "Initialisation failure\n");
-	
-}
-
 void initTableFun(){
 	
 	table_fun = (fun_ident*)malloc(sizeof(fun_ident));
 	table_fun_size = 1;
 	if(table_fun == NULL)
 		fprintf(stderr, "Initialisation failure\n");
+		
+	strcpy(table_fun[0].id, "main");
 	
 }
 
 void add_fun(const char* id, int nb_param, int addr, type_var type){
-	static int index = 0;
+	static int index = 1;
 	
 	if(index >= table_fun_size){
 		table_fun_size++;
@@ -107,16 +99,16 @@ void add_fun(const char* id, int nb_param, int addr, type_var type){
 	table_fun[index].nb_param = nb_param;
 	table_fun[index].addr = addr;
 	table_fun[index].type = type;
+	table_fun[index].nb_alloc = nb_param;
 	
 	index++;
 	
 }	
 
 void add_symb(const char* id, int is_const, int addr, int cur_fun_index, type_var type){
-	static int index = 0;
-	
 	symb* tmp = NULL;
-	int* tmp_size = NULL;
+	int* tmp_size;
+	int index;
 	
 	/* on verifie que la variable n'est pas déjà dans la table des symboles générale */
 	if(NULL != searchInTable(id, cur_fun_index)){
@@ -125,12 +117,11 @@ void add_symb(const char* id, int is_const, int addr, int cur_fun_index, type_va
 	}
 	
 	tmp = getTableOfFunctionByIndex(cur_fun_index, &tmp_size);		
+	index = *tmp_size + 1;
 	
-	if(index >= *tmp_size){
-		*tmp_size = *tmp_size + 1;
-		tmp = (symb*) realloc(tmp, sizeof(symb) * (*tmp_size));
-		if(tmp == NULL)
-			fprintf(stderr, "Initialisation failure\n");
+	if(index >= MAX_VARIABLE){
+		yyerror("Max variable limit reached\n");
+		exit(EXIT_FAILURE);
 	}
 	
 	memcpy(tmp[index].id, id, strlen(id));
@@ -138,18 +129,24 @@ void add_symb(const char* id, int is_const, int addr, int cur_fun_index, type_va
 	tmp[index].addr = addr;
 	tmp[index].type = type;
 	
-	index++;
-}
-
-void startFun(int stack_cur, char* id){
-	
-	int i;
-	for(i=0; i<table_fun_size; i++){
-		if(0 == strcmp(id, table_fun[i].id)){
-			instarg("CALL", table_fun[i].addr);
-			return;
-		}
+	printf("Symbole %s ajouté", id);
+	if(cur_fun_index == -1){
+		printf(".\n");
+	} else {
+		printf(" dans la fonction %s.\n", table_fun[cur_fun_index].id);
 	}
 	
+	*tmp_size += 1;
+}
+
+int getFunAddrById(char* id){
 	
+	int i;
+	for(i=1; i<table_fun_size; i++){
+		if(0 == strcmp(id, table_fun[i].id)){
+			return i;
+		}
+	}
+	fprintf(stderr, "Undefined function %s\n", id);
+	exit(EXIT_FAILURE);	
 }

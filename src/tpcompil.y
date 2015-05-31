@@ -18,7 +18,8 @@ typedef enum { false, true }Bool;
 	int jump_label = 0;
 	int jump_fin_while = 0;
 	type_var cur_type;
-	int cur_const;
+	int cur_const = 0;
+	int callee;
 	
 	void alloc(int* cur);
 	void inst(const char *);
@@ -81,7 +82,7 @@ typedef enum { false, true }Bool;
 PROG 		: DeclConst DeclVarPuisFonct DeclMain
 			;
 
-DeclConst 	: CONST TYPE {cur_type = getType($2); cur_const = 1;} ListConst PV {cur_const = 0;} DeclConst
+DeclConst 	: CONST {cur_type = ENT; cur_const = 1;} ListConst PV {cur_const = 0;} DeclConst
 			| /* rien */
 			;
 	
@@ -113,7 +114,7 @@ Tab			: Tab LSQB NUM RSQB
 			|
 			; 
 			
-DeclMain	: EnTeteMain {cur_fun_index = -1; instarg("LABEL", 0);} Corps
+DeclMain	: EnTeteMain {cur_fun_index = 0; instarg("LABEL", 0);} Corps
 			;
 			
 EnTeteMain	: MAIN LPAR RPAR
@@ -134,8 +135,8 @@ Parametres	: VOID {nb_arg_cur = 0; /* pas d'args */}
 			| ListTypVar
 			;
 			
-ListTypVar	: ListTypVar VRG TYPE IDENT {nb_arg_cur++;}
-			| TYPE IDENT {nb_arg_cur++; }
+ListTypVar	: ListTypVar VRG TYPE IDENT { alloc(&stack_cur); nb_arg_cur++; add_symb($4, 1, stack_cur-1, cur_fun_index, getType($3));}
+			| TYPE IDENT { alloc(&stack_cur); nb_arg_cur++; add_symb($2, 1, stack_cur-1, cur_fun_index, getType($1));}
 			;
 
 Corps		: LACC DeclConst DeclVar SuiteInstr RACC
@@ -162,15 +163,15 @@ JUMPE 		: {instarg("JUMP", $$ = newLabel());}
 			;
 			
 			
-Instr		: LValue EGAL Exp PV
+Instr		: LValue EGAL Exp PV						{ putOnStack($1, $3);}
 			| IF LPAR Exp RPAR JUMPIF Instr %prec SEULIF { instarg("LABEL",$5); }
 			| IF LPAR Exp RPAR JUMPIF Instr ELSE JUMPE { instarg("LABEL",$5); } Instr { instarg("LABEL",$8); }
 			| WHILE LPAR {instarg("LABEL", jump_label = newLabel());} Exp JUMPFALSE RPAR Instr {instarg("JUMP", jump_label);} {instarg("LABEL", jump_fin_while);}		
 			| RETURN Exp PV								{inst("POP"); inst("RETURN");}
 			| RETURN PV									{inst("RETURN");}
-			| IDENT LPAR Arguments RPAR PV				{startFun(stack_cur, $1);}
-			| READ LPAR IDENT RPAR PV
-			| READCH LPAR IDENT RPAR PV
+			| IDENT {callee = getFunAddrById($1); instarg("ALLOC", table_fun[callee].nb_param); } LPAR Arguments RPAR PV	{instarg("CALL", table_fun[callee].addr); instarg("FREE", table_fun[callee].nb_param);}
+			| READ LPAR IDENT RPAR PV					{ instarg("SET", getIdAddrOnStack($3, cur_fun_index)); inst("SWAP"); inst("READ"); inst("SAVE"); }
+			| READCH LPAR IDENT RPAR PV					
 			| PRINT LPAR Exp RPAR PV					{inst("POP");inst("WRITE");}
 			| PV										{}
 			| InstrComp									{}
@@ -185,8 +186,9 @@ Arguments 	: ListExp
 LValue		: IDENT /* TabExp */ 						{ /* if(NULL == searchInTable($1, cur_fun_index)) {yyerror("Undeclared variable");}*/ $$ = getIdAddrOnStack($1, cur_fun_index);}
 			;
 				
-ListExp 	: ListExp VRG Exp
-			| Exp;
+ListExp 	: ListExp VRG Exp {putOnStack(stack_cur++, $3);}
+			| Exp {putOnStack(stack_cur++, $1);}
+			;
         
 Exp 		: Exp ADDSUB Exp 							{inst("POP"); inst("SWAP"); inst("POP"); add_sub($2); inst("PUSH");}
 			| Exp DIVSTAR Exp							{inst("POP"); inst("SWAP"); inst("POP"); div_star($2); inst("PUSH");}
@@ -197,7 +199,8 @@ Exp 		: Exp ADDSUB Exp 							{inst("POP"); inst("SWAP"); inst("POP"); add_sub($
 			| LPAR Exp RPAR 							{$$ = $2;}
 			| LValue									{instarg("SET", $1); inst("LOAD"); inst("PUSH"); }
 			| NUM 										{instarg("SET", $1); inst("PUSH");}
-			| IDENT LPAR Arguments RPAR					{startFun(stack_cur, $1);}
+			| CARACTERE									{instarg("SET", $1); inst("PUSH");}
+			| IDENT LPAR Arguments RPAR				
 		
 %%
 
@@ -235,7 +238,7 @@ int getsigne(char addsub){
 }
 
 type_var getType(char* type){
-	if(strcpy(type, "entier") == 0)
+	if(strcmp(type, "entier") == 0)
 		return ENT;
 	return CAR;
 }
@@ -345,8 +348,8 @@ int main(int argc, char** argv) {
     return 1;
   }
   
-  /* initialisation tables */
-  initTableSymb();
+  /* initialisation table fonction */
+	table_symb_size = 0;
   initTableFun();
   
   yyparse();

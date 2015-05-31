@@ -16,7 +16,7 @@ typedef enum { ENT, CAR, VOI } type_var;
 #define LEN_ID 50
 
 /* nb max of varaible + param in a function */
-#define MAX_VARIABLE 15
+#define MAX_VARIABLE 30
 
 typedef struct {
 	char id[LEN_ID]; /* NOM ID */
@@ -36,10 +36,9 @@ typedef struct {
 
 int table_symb_size;
 int table_fun_size;
-symb* table_symb;
+symb table_symb[MAX_VARIABLE];
 fun_ident* table_fun;
 
-void initTableSymb();
 void initTableFun();
 symb* searchInTable(const char* id, int cur_fun_index);
 int verifyConst(const char* id, int cur_fun_index);
@@ -47,7 +46,7 @@ void add_symb(const char* id, int is_const, int addr, int cur_fun_index, type_va
 void add_fun(const char* id, int nb_param, int addr, type_var type);
 int getIdAddrOnStack(char* id, int stack_max);
 void putOnStack(int addr, int val);
-void startFun(int stack_cur, char* id);
+int getFunAddrById(char* id);
 
 
 

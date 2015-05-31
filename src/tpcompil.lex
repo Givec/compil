@@ -37,6 +37,6 @@
 
 
 ["&&", "||"] {strcpy(yylval.bool, yytext); return BOPE;}
-[a-z]+ {strcpy(*(&yylval.ident), yytext); return IDENT;}
+[a-zA-Z0-9_]+ {strcpy(*(&yylval.ident), yytext); return IDENT;}
 . return yytext[0];
 %%
