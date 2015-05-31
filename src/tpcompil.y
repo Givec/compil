@@ -164,14 +164,14 @@ JUMPE 		: {instarg("JUMP", $$ = newLabel());}
 			
 			
 Instr		: LValue EGAL Exp PV
-			| IF LPAR Exp RPAR JUMPIF Instr %prec SEULIF { instarg("LABEL",$5); }
-			| IF LPAR Exp RPAR JUMPIF Instr ELSE JUMPE { instarg("LABEL",$5); } Instr { instarg("LABEL",$8); }
+			| IF LPAR Exp RPAR JUMPIF Instr %prec SEULIF{instarg("LABEL",$5); }
+			| IF LPAR Exp RPAR JUMPIF Instr ELSE JUMPE 	{instarg("LABEL",$5); } Instr { instarg("LABEL",$8); }
 			| WHILE LPAR {instarg("LABEL", jump_label = newLabel());} Exp JUMPFALSE RPAR Instr {instarg("JUMP", jump_label);} {instarg("LABEL", jump_fin_while);}		
 			| RETURN Exp PV								{inst("POP"); inst("RETURN");}
 			| RETURN PV									{inst("RETURN");}
 			| IDENT LPAR Arguments RPAR PV				{startFun(stack_cur, $1);}
-			| READ LPAR IDENT RPAR PV
-			| READCH LPAR IDENT RPAR PV
+			| READ LPAR IDENT RPAR PV					{inst("READ");inst("PUSH");}
+			| READCH LPAR IDENT RPAR PV					{inst("READCH");inst("PUSH");}
 			| PRINT LPAR Exp RPAR PV					{inst("POP");inst("WRITE");}
 			| PV										{}
 			| InstrComp									{}
